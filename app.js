@@ -1,6 +1,7 @@
 // Import Firebase libraries
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, setDoc, doc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 // Firebase configuration (replace with your Firebase config)
 const firebaseConfig = {
@@ -16,6 +17,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // Hashing password function
 async function hashPassword(password, salt) {
@@ -104,9 +106,14 @@ async function validateForm() {
         salt: salt // Store the salt if you need to verify the password later
     };
 
-    // Store user data in Firestore
+    // Store user data in Firestore using UID as document ID
     try {
-        await addDoc(collection(db, "users"), formData);
+        // Get the user's UID after registration
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const userId = userCredential.user.uid; // Get the UID
+
+        await setDoc(doc(db, "users", userId), formData); // Use setDoc to store user data
+
         document.getElementById("registerForm").reset();
         document.getElementById("thankYou").style.display = "block";
         document.getElementById("registerForm").style.display = "none";
