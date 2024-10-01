@@ -1,7 +1,7 @@
 // Import Firebase libraries
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -111,14 +111,14 @@ async function validateForm() {
     };
 
     try {
-        // Get the user's UID after registration
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        // Create a user account
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password); // Updated syntax
         const userId = userCredential.user.uid; // Get the UID
 
-        // Use addDoc to store user data
+        // Store user data
         await addDoc(collection(db, "users"), {
-            ...formData,
-            userId // Optionally store userId if needed
+            userId: userId, // Optionally store userId if needed
+            ...formData
         });
 
         document.getElementById("registerForm").reset();
@@ -126,6 +126,7 @@ async function validateForm() {
         document.getElementById("registerForm").style.display = "none";
     } catch (e) {
         console.error("Error during registration: ", e);
+        alert("Error during registration: " + e.message); // Show the error message to the user
     }
 }
 

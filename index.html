@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Single Page App</title>
-    <link href="app.css" rel="stylesheet" type="text/css">
+    <link href="css/app.css" rel="stylesheet" type="text/css">
 </head>
 
 <body>
@@ -42,12 +42,13 @@
             <form id="thankYou" class="form-control" style="display: none;">
                 <div style="text-align: center">
                     <h1>Thank You!</h1>
-                    <p>You have successfully registered with us. You can <a href="javascript:void(0);" onclick="showHide('logIn', 'thankYou')">Log in now</a></p>
+                    <p>You have successfully registered with us. You can <a href="javascript:void(0);" onclick="showHide('logIn', 'thankYou')">log in now</a>.</p>
                 </div>
             </form>
-            <form name="login" id="logIn" method="POST" class="form-control" onsubmit="return loginUser()" style="display: none;">
+
+            <form id="logIn" method="POST" name="login" class="form-control" style="display: none;">
                 <div>
-                    <h1>LOG IN</h1>
+                    <h1>LOGIN</h1>
                     <ul>
                         <li>
                             <label for="uemailId">Email</label>
@@ -58,7 +59,7 @@
                             <input type="password" name="password" id="ePassword" placeholder="Enter your password." required>
                         </li>
                         <li>
-                            <button type="submit">Log in</button>
+                            <button type="submit" id="login">Log in</button>
                             <br>
                             <span>Don't have an account? <a href="javascript:void(0);" onclick="showHide('registerForm', 'logIn')">Create one now</a></span>
                         </li>
@@ -67,6 +68,7 @@
             </form>
         </div>
     </main>
-    <script type="module" src="app.js"></script>
+
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
