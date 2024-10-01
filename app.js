@@ -1,17 +1,17 @@
 // Import Firebase libraries
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getFirestore, collection, setDoc, doc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-// Firebase configuration (replace with your Firebase config)
+// Firebase configuration
 const firebaseConfig = {
-    apiKey: "AlzaSvCalMUtToOFutyNBoEXAYZW68bSGReR954",
-    authDomain: "9Pmugu01-46274.firebaseapp.com",
+    apiKey: "AIzaSyCllMWtTo0FvtyvBoEXAYZW68bSGReR954",
+    authDomain: "appugugu-46214.firebaseapp.com",
     projectId: "appugugu-46214",
     storageBucket: "appugugu-46214.appspot.com",
-    messagingSenderId: "5013889472884",
-    appId: "1:581388947288:web:93c0e6862eea3f98061be7",
-    measurementId: "G-F033JOFDOK"
+    messagingSenderId: "501388947238",
+    appId: "1:501388947238:web:93cce68b2eea3f98061be7",
+    measurementId: "G-F033J9FD9K"
 };
 
 // Initialize Firebase
@@ -44,13 +44,10 @@ function sanitizeInput(input) {
     return element.innerHTML;
 }
 
-// Check if the password matches
-function verifyPassword(input) {
-    if (input.value !== document.getElementById("uPassword").value) {
-        input.setCustomValidity("Password must match.");
-    } else {
-        input.setCustomValidity("");
-    }
+// Validate email format
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Simple email regex
+    return re.test(String(email).toLowerCase());
 }
 
 // Check if the email already exists in Firestore
@@ -89,7 +86,7 @@ async function validateForm() {
         return;
     }
 
-    // Generate a salt (for demo purposes, use a fixed salt or a more complex generation in real apps)
+    // Generate a salt
     const salt = "randomSalt"; // Use a unique salt for each user in a real application
 
     // Hash the password
@@ -97,6 +94,13 @@ async function validateForm() {
 
     // Hash the email
     const email = sanitizeInput(document.getElementById("uEmail").value);
+    
+    // Validate email
+    if (!validateEmail(email)) {
+        alert('Invalid email format!');
+        return;
+    }
+
     const hashedEmail = await hashEmail(email, salt);
 
     const formData = {
@@ -106,19 +110,22 @@ async function validateForm() {
         salt: salt // Store the salt if you need to verify the password later
     };
 
-    // Store user data in Firestore using UID as document ID
     try {
         // Get the user's UID after registration
         const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         const userId = userCredential.user.uid; // Get the UID
 
-        await setDoc(doc(db, "users", userId), formData); // Use setDoc to store user data
+        // Use addDoc to store user data
+        await addDoc(collection(db, "users"), {
+            ...formData,
+            userId // Optionally store userId if needed
+        });
 
         document.getElementById("registerForm").reset();
         document.getElementById("thankYou").style.display = "block";
         document.getElementById("registerForm").style.display = "none";
     } catch (e) {
-        console.error("Error adding document: ", e);
+        console.error("Error during registration: ", e);
     }
 }
 
@@ -169,4 +176,10 @@ loginForm.addEventListener("submit", async function (e) {
 window.emailExist = emailExist;
 
 // Attach verifyPassword function to window object
-window.verifyPassword = verifyPassword;
+window.verifyPassword = function(input) {
+    if (input.value !== document.getElementById("uPassword").value) {
+        input.setCustomValidity("Password must match.");
+    } else {
+        input.setCustomValidity("");
+    }
+};
