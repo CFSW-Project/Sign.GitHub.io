@@ -1,16 +1,35 @@
-/// Hashing the password using SHA-256 before storing it
+// Import Firebase libraries
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+// Firebase configuration (replace with your Firebase config)
+const firebaseConfig = {
+    apiKey: "AlzaSvCalMUtToOFutyNBoEXAYZW68bSGReR954",
+    authDomain: "9Pmugu01-46274.firebaseapp.com",
+    projectId: "appugugu-46214",
+    storageBucket: "appugugu-46214.appspot.com",
+    messagingSenderId: "5013889472884",
+    appId: "1:581388947288:web:93c0e6862eea3f98061be7",
+    measurementId: "G-F033JOFDOK"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Hashing password function
 async function hashPassword(password, salt) {
     const encoder = new TextEncoder();
-    const data = encoder.encode(password + salt); // Combine password with salt
+    const data = encoder.encode(password + salt);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/// Hashing the email using SHA-256 before storing it
+// Hashing email function
 async function hashEmail(email, salt) {
     const encoder = new TextEncoder();
-    const data = encoder.encode(email + salt); // Combine email with salt
+    const data = encoder.encode(email + salt);
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -32,17 +51,17 @@ function verifyPassword(input) {
     }
 }
 
-// Check if the email already exists
+// Check if the email already exists in Firestore
 async function emailExist(value) {
-    const existemail = JSON.parse(localStorage.getItem("details"));
-    if (existemail) {
-        const emailid = await Promise.all(existemail.map(async user => await hashEmail(user.email, "randomSalt"))); // Hash existing emails
-        const hashedValue = await hashEmail(value.value, "randomSalt"); // Hash the new email
-        if (emailid.includes(hashedValue)) {
-            value.setCustomValidity('Email exists. Try another.');
-        } else {
-            value.setCustomValidity("");
-        }
+    const hashedEmail = await hashEmail(value.value, "randomSalt");
+
+    // Check Firestore for existing hashed email
+    const q = query(collection(db, "users"), where("email", "==", hashedEmail));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        value.setCustomValidity('Email exists. Try another.');
+    } else {
+        value.setCustomValidity("");
     }
 }
 
@@ -54,9 +73,11 @@ function showHide(show, hide) {
     hideEle.style.display = "none";
 }
 
-// Validate and store user data
+// Attach the showHide function to the window object to make it globally accessible
+window.showHide = showHide;
+
+// Validate and store user data in Firestore
 async function validateForm() {
-    let data = localStorage.getItem('details') ? JSON.parse(localStorage.getItem('details')) : [];
     const password = document.getElementById("uPassword").value;
     const confirmPassword = document.getElementById("confirmPassword").value;
 
@@ -67,7 +88,7 @@ async function validateForm() {
     }
 
     // Generate a salt (for demo purposes, use a fixed salt or a more complex generation in real apps)
-    const salt = "randomSalt"; // You can generate this randomly for each user in a real application
+    const salt = "randomSalt"; // Use a unique salt for each user in a real application
 
     // Hash the password
     const hashedPassword = await hashPassword(password, salt);
@@ -76,25 +97,29 @@ async function validateForm() {
     const email = sanitizeInput(document.getElementById("uEmail").value);
     const hashedEmail = await hashEmail(email, salt);
 
-    let formData = {
-        "name": sanitizeInput(document.getElementById("uName").value),
-        "email": hashedEmail,
-        "password": hashedPassword,
-        "salt": salt // Store the salt if you need to verify the password later
+    const formData = {
+        name: sanitizeInput(document.getElementById("uName").value),
+        email: hashedEmail,
+        password: hashedPassword,
+        salt: salt // Store the salt if you need to verify the password later
     };
 
-    data.push(formData);
-    localStorage.setItem("details", JSON.stringify(data));
+    // Store user data in Firestore
+    try {
+        await addDoc(collection(db, "users"), formData);
+        document.getElementById("registerForm").reset();
+        document.getElementById("thankYou").style.display = "block";
+        document.getElementById("registerForm").style.display = "none";
+    } catch (e) {
+        console.error("Error adding document: ", e);
+    }
 }
 
-// Handling form submission
+// Handling form submission for registration
 const form = document.getElementById("registerForm");
 form.addEventListener("submit", async function (e) {
     e.preventDefault();
     await validateForm();
-    form.reset();
-    document.getElementById("thankYou").style.display = "block";
-    form.style.display = "none";
 });
 
 // Login user securely
@@ -102,28 +127,29 @@ async function loginUser() {
     const loginEmail = sanitizeInput(document.getElementById("uemailId").value);
     const loginPass = document.getElementById("ePassword").value;
 
-    const users = JSON.parse(localStorage.getItem("details"));
-    if (users) {
-        // Hash the login email with the same salt
-        const hashedLoginEmail = await hashEmail(loginEmail, "randomSalt");
-        const user = users.find(user => user.email === hashedLoginEmail);
-        if (user) {
-            // Hash the login password with the same salt
-            const hashedLoginPass = await hashPassword(loginPass, user.salt);
-            if (hashedLoginPass === user.password) {
-                console.log("You have successfully logged in");
-                localStorage.setItem('loggedInUser', sanitizeInput(user.name)); // Store the username safely
-                window.location.href = 'home.html'; // Redirect to home page
-            } else {
-                console.log("Invalid credentials");
-            }
+    const hashedLoginEmail = await hashEmail(loginEmail, "randomSalt");
+    const q = query(collection(db, "users"), where("email", "==", hashedLoginEmail));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        const user = querySnapshot.docs[0].data(); // Get user data
+
+        // Hash the login password with the same salt
+        const hashedLoginPass = await hashPassword(loginPass, user.salt);
+        if (hashedLoginPass === user.password) {
+            console.log("You have successfully logged in");
+            localStorage.setItem('loggedInUser', sanitizeInput(user.name)); // Store the username safely
+            window.location.href = 'home.html'; // Redirect to home page
         } else {
-            console.log("No users registered.");
+            console.log("Invalid credentials");
         }
     } else {
         console.log("No users registered.");
     }
 }
+
+// Attach the loginUser function to the window object to make it globally accessible
+window.loginUser = loginUser;
 
 // Handling login form submission
 const loginForm = document.getElementById("logIn");
@@ -131,3 +157,9 @@ loginForm.addEventListener("submit", async function (e) {
     e.preventDefault();
     await loginUser();
 });
+
+// Attach emailExist function to window object
+window.emailExist = emailExist;
+
+// Attach verifyPassword function to window object
+window.verifyPassword = verifyPassword;
