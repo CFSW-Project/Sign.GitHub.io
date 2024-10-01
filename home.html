@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="home-container">
+        <h1 class="size">Welcome, <span id="display-username"></span>!</h1>
+        <button id="logout-btn" class="logout">Log Out</button>
+    </div>
+
+    <script>
+        // Retrieve the logged-in username from localStorage
+        const loggedInUser = localStorage.getItem('loggedInUser');
+        const displayUsername = document.getElementById('display-username');
+
+        if (loggedInUser) {
+            displayUsername.textContent = loggedInUser;  // Display the username
+        } else {
+            // If no user is logged in, redirect back to login page
+            window.location.href = 'index.html';  // Change to your login page URL
+        }
+
+        // Handle logout
+        const logoutBtn = document.getElementById('logout-btn');
+        logoutBtn.addEventListener('click', function() {
+            // Remove the logged-in user from localStorage
+            localStorage.removeItem('loggedInUser');
+            // Redirect to the login page
+            window.location.href = 'index.html';  // Change to your login page URL
+        });
+    </script>
+</body>
+</html>
